@@ -1,6 +1,6 @@
-(scríobh "Dia Dhuit Domhan!")
+(scríobh "Dia Dhuit a Dhomain!")
 
 (sainigh f (oscail_comhad_aschur "amach.txt"))
-(scríobh "Dia Dhuit Domhan" f)
+(scríobh "Dia Dhuit a Dhomain" f)
 (dún_comhad_aschur f)
 
