@@ -7,8 +7,8 @@ Is teanga ríomhchlárúcháin beag é Áireamhán, atá ar fáil trí mheán na
 
 
 ```
-áireamhán > (scríobh "Dia Duit Domhan!")
-Dia Duit Domhan!
+áireamhán > (scríobh "Dia Dhuit a Dhomain!")
+Dia Dhuit a Dhomain!
 ```
 
 ---
