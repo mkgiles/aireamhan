@@ -20,8 +20,8 @@ def Sym(s, symbol_table={}):
 
     return symbol_table[s]
 
-_quote, _if, _when, _define, _lambda, _begin, _set, = map(Sym,
-"athfhriotal   má   nuair   sainigh   lambda   tosaigh  cuir!".split())
+_quote, _if, _when, _unless, _define, _lambda, _begin, _set = map(Sym,
+"athfhriotal   má   nuair   mura   sainigh   lambda   tosaigh  cuir!".split())
 eof_object = Symbol('#<eof-object>')
 
 
@@ -239,6 +239,14 @@ def evaluate(x, env=global_env):
                 evaluate(x[-1])
             return None
 
+        elif x[0] is _unless:
+            test = x[1]
+            if(not(evaluate(test,env))):
+                for a in x[2:-1]:
+                    evaluate(a)
+                evaluate(x[-1])
+            return None
+
         elif x[0] is _set:       # (set! var exp)
             (_, var, exp) = x
             env.find(var)[var] = evaluate(exp, env)
@@ -286,7 +294,9 @@ def expand(x, toplevel=False):
         return list(map(expand, x))
 
     elif x[0] is _when:
-        # require(x, len(x)==3)
+        return list(map(expand, x))
+
+    elif x[0] is _unless:
         return list(map(expand, x))
 
     elif x[0] is _set:
