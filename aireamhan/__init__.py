@@ -20,8 +20,8 @@ def Sym(s, symbol_table={}):
 
     return symbol_table[s]
 
-_quote, _if, _when, _unless, _define, _lambda, _begin, _set = map(Sym,
-"athfhriotal   má   nuair   mura   sainigh   lambda   tosaigh  cuir!".split())
+_quote, _if, _when, _unless, _define, _lambda, _begin, _set, _let, _cond, _else = map(Sym,
+"athfhriotal   má   nuair   mura   sainigh   lambda   tosaigh  cuir!   abraimis   coinníoll   eile".split())
 eof_object = Symbol('#<eof-object>')
 
 
@@ -148,9 +148,14 @@ def repl(prompt='áireamhán > ', inport=InPort(sys.stdin), out=sys.stdout):
         try:
             if prompt: print(prompt, file=sys.stderr)
             x = parse(inport)
-            if x is eof_object: return
+            if x == eof_object:
+                if inport.__dict__ == InPort(sys.stdin).__dict__:
+                    quit()
+                else:
+                    print("Lódáladh")
+                    return
             if x == 'dún':
-                print('-'*5 + '\nSlán\n')
+                quit()
                 return
 
             val = evaluate(x)
@@ -160,6 +165,9 @@ def repl(prompt='áireamhán > ', inport=InPort(sys.stdin), out=sys.stdout):
         except Fadhb as e:
             print('{0}: {1}'.format(type(e).__name__, e))
 
+def quit():
+    print('-'*5 + '\nSlán\n')
+    exit()
 
 class Env(dict):
     "An environment: a dict of {'var':val} pairs, with an outer Env."
@@ -195,7 +203,7 @@ def add_globals(self):
     self.update(vars(cmath))
     self.update({
      '+':op.add, '-':op.sub, '*':op.mul, '/':op.itruediv, 'níl':op.not_, 'agus':op.and_,
-     '>':op.gt, '<':op.lt, '>=':op.ge, '<=':op.le, '=':op.eq, 'mod':op.mod,
+     'nó':op.or_,'>':op.gt, '<':op.lt, '>=':op.ge, '<=':op.le, '=':op.eq, 'mod':op.mod,
      'frmh':cmath.sqrt, 'dearbhluach':abs, 'uas':max, 'íos':min,
      'cothrom_le?':op.eq, 'ionann?':op.is_, 'fad':len, 'cons':cons,
      'ceann':lambda x:x[0], 'tóin':lambda x:x[1:], 'iarcheangail':op.add,
@@ -208,14 +216,14 @@ def add_globals(self):
      'oscail_comhad_aschur':lambda f:open(f,'w'), 'dún_comhad_aschur':lambda p: p.close(),
      'dac?':lambda x:x is eof_object, 'luacháil':lambda x: evaluate(x),
      'scríobh':lambda x,port=sys.stdout:port.write(to_string(x) + '\n'),
-     'éirigh_as':exit})
+     'éirigh_as':quit})
     return self
 
 global_env = add_globals(Env())
 
 
 def evaluate(x, env=global_env):
-    "evaluateuate an expression in an environment."
+    "evaluate an expression in an environment."
     while True:
         if isa(x, Symbol):       # variable reference
             return env.find(x)[x]
@@ -231,12 +239,31 @@ def evaluate(x, env=global_env):
             (_, test, conseq, alt) = x
             x = (conseq if evaluate(test, env) else alt)
 
+        elif x[0] is _cond:
+            clauses = x[1:-1]
+            for c,e in clauses:
+                if evaluate(c, env):
+                    evaluate(e)
+                    return
+            (final, fexp) = x[-1]
+            if(final == _else):
+                evaluate(fexp)
+                return
+            else:
+                if evaluate(final, env):
+                    evaluate(fexp)
+                    return
+                else:
+                    return
+
+        elif x[0] is _else:
+            return True
+
         elif x[0] is _when:
             test = x[1]
             if evaluate(test,env):
-                for a in x[2:-1]:
+                for a in x[2:]:
                     evaluate(a)
-                evaluate(x[-1])
             return None
 
         elif x[0] is _unless:
@@ -256,6 +283,15 @@ def evaluate(x, env=global_env):
             (_, var, exp) = x
             env[var] = evaluate(exp, env)
             return None
+
+        elif x[0] is _let:
+            (_, vars, exp) = x
+            parms = []
+            args = []
+            for c, e in vars:
+                parms.append(c)
+                args.append(e)
+            return evaluate(exp,Env(parms, args, env))
 
         elif x[0] is _lambda:    # (lambda (var*) exp)
             (_, vars, exp) = x
