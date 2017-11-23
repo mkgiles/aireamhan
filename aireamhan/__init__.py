@@ -353,6 +353,19 @@ def expand(x, toplevel=False):
         exp = body[0] if len(body) == 1 else [_begin] + body
         return [_lambda, vars, expand(exp)]
 
+    elif x[0] is _define:
+        if isa(x[1],list):
+            lda = [_lambda,x[1][1:]]
+            if(len(x) > 3):
+                bgn = [_begin]
+                bgn.extend(x[2:])
+                lda.append(bgn)
+            else:
+                lda.extend(x[2:])
+            return expand([_define,x[1][0],lda])
+        else:
+            return x
+
     else:                                #        => macroexpand if m isa macro
         return list(map(expand, x))           # (f arg...) => expand each
 
